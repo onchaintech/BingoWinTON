@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>BingoWinTON Mini App</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #FFC107;
+            --background-color: #1E1E1E;
+            --text-color: #FFFFFF;
+            --cell-bg-color: #2C2C2C;
+            --cell-text-color: #FFFFFF;
+            --marked-cell-bg: #4CAF50;
+            --marked-cell-text: #FFFFFF;
+            --ball-bg-color: #3498db;
+            --b-color: #FF5733;
+            --i-color: #33FF57;
+            --n-color: #3357FF;
+            --g-color: #FF33F5;
+            --o-color: #F5FF33;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--secondary-color);
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        #ball-display {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: var(--ball-bg-color);
+            border-radius: 15px;
+            color: var(--text-color);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #ball-display .letter {
+            margin-right: 10px;
+        }
+
+        #ball-display .number {
+            font-size: 1.2em;
+        }
+
+        #bingo-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+        }
+
+        .bingo-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .column-header {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: var(--cell-bg-color);
+            color: var(--cell-text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .bingo-cell:hover {
+            transform: scale(1.05);
+        }
+
+        .bingo-cell.marked {
+            background-color: var(--marked-cell-bg);
+            color: var(--marked-cell-text);
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 18px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: var(--background-color);
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid var(--secondary-color);
+            width: 80%;
+            max-width: 400px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: var(--text-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BingoWinTON</h1>
+        <div id="game-info">
+            <div>Time: <span id="time-display">03:00</span></div>
+            <div>Marked: <span id="marked-count">0</span> / 30</div>
+        </div>
+        <div id="ball-display"><span class="letter"></span><span class="number"></span></div>
+        <div id="bingo-board"></div>
+        <button id="start-game-btn">Start Game</button>
+        <button id="new-game-btn" style="display: none;">New Game</button>
+    </div>
+    <div id="victory-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Congratulations!</h2>
+            <p id="victory-message"></p>
+        </div>
+    </div>
+    <canvas id="confetti-canvas"></canvas>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        // Initialize Telegram Web App
+        Telegram.WebApp.ready();
+
+        const ballDisplay = document.getElementById('ball-display');
+        const ballLetter = ballDisplay.querySelector('.letter');
+        const ballNumber = ballDisplay.querySelector('.number');
+        const bingoBoard = document.getElementById('bingo-board');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const markedCountDisplay = document.getElementById('marked-count');
+        const timeDisplay = document.getElementById('time-display');
+        const victoryModal = document.getElementById('victory-modal');
+        const victoryMessage = document.getElementById('victory-message');
+        const closeModal = document.getElementsByClassName('close')[0];
+
+        let markedCount = 0;
+        let boardNumbers = [];
+        let calledNumbers = [];
+        let countdownInterval;
+        let ballCallInterval;
+        let timeLeft = 180; // 3 minutes in seconds
+        const maxMarked = 30;
+        let isGameOver = false;
+
+        const letters = ['B', 'I', 'N', 'G', 'O'];
+
+        // Sound effects
+        const sounds = {
+            ballCall: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-elevator-tone-2863.mp3'),
+            mark: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3'),
+            win: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'),
+            gameOver: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-game-over-trombone-1940.mp3')
+        };
+
+        function generateBingoNumbers() {
+            const numbers = [];
+            for (let i = 0; i < 5; i++) {
+                const columnNumbers = [];
+                while (columnNumbers.length < 5) {
+                    const num = Math.floor(Math.random() * 15) + 1 + (i * 15);
+                    if (!columnNumbers.includes(num)) {
+                        columnNumbers.push(num);
+                    }
+                }
+                numbers.push(...columnNumbers);
+            }
+            return numbers;
+        }
+
+        function createBingoBoard() {
+            bingoBoard.innerHTML = '';
+            boardNumbers = generateBingoNumbers();
+            letters.forEach((letter, columnIndex) => {
+                const column = document.createElement('div');
+                column.className = 'bingo-column';
+                
+                const header = document.createElement('div');
+                header.className = 'column-header';
+                header.textContent = letter;
+                header.style.backgroundColor = `var(--${letter.toLowerCase()}-color)`;
+                column.appendChild(header);
+
+                for (let i = 0; i < 5; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'bingo-cell';
+                    cell.textContent = boardNumbers[columnIndex * 5 + i];
+                    cell.addEventListener('click', () => toggleCell(cell));
+                    column.appendChild(cell);
+                }
+                bingoBoard.appendChild(column);
+            });
+            markedCount = 0;
+            updateMarkedCount();
+        }
+
+        function toggleCell(cell) {
+            if (isGameOver) return;
+            if (calledNumbers.includes(parseInt(cell.textContent))) {
+                if (!cell.classList.contains('marked') && markedCount >= maxMarked) {
+                    Telegram.WebApp.showAlert('You have reached the maximum number of marks!');
+                    return;
+                }
+                cell.classList.toggle('marked');
+                markedCount += cell.classList.contains('marked') ? 1 : -1;
+                updateMarkedCount();
+                if (cell.classList.contains('marked')) {
+                    playSound(sounds.mark);
+                }
+                checkForWin();
+            }
+        }
+
+        function updateMarkedCount() {
+            markedCountDisplay.textContent = markedCount;
+        }
+
+        function checkForWin() {
+            const cells = document.querySelectorAll('.bingo-cell');
+            if (checkLines(cells)) {
+                endGame('win');
+            } else if (markedCount >= maxMarked) {
+                endGame('maxMarks');
+            }
+        }
+
+        function checkLines(cells) {
+            // Check rows, columns, and diagonals
+            for (let i = 0; i < 5; i++) {
+                if (
+                    (cells[i*5].classList.contains('marked') &&
+                    cells[i*5+1].classList.contains('marked') &&
+                    cells[i*5+2].classList.contains('marked') &&
+                    cells[i*5+3].classList.contains('marked') &&
+                    cells[i*5+4].classList.contains('marked')) ||
+                    (cells[i].classList.contains('marked') &&
+                    cells[i+5].classList.contains('marked') &&
+                    cells[i+10].classList.contains('marked') &&
+                    cells[i+15].classList.contains('marked') &&
+                    cells[i+20].classList.contains('marked'))
+                ) {
+                    return true;
+                }
+            }
+            if (
+                (cells[0].classList.contains('marked') &&
+                cells[6].classList.contains('marked') &&
+                cells[12].classList.contains('marked') &&
+                cells[18].classList.contains('marked') &&
+                cells[24].classList.contains('marked')) ||
+                (cells[4].classList.contains('marked') &&
+                cells[8].classList.contains('marked') &&
+                cells[12].classList.contains('marked') &&
+                cells[16].classList.contains('marked') &&
+                cells[20].classList.contains('marked'))
+            ) {
+                return true;
+            }
+            return false;
+        }
+
+        function endGame(reason) {
+        isGameOver = true;
+        stopGame();
+
+        // Play appropriate sound effect
+        if (reason === 'win') {
+            playSound(sounds.win);
+        } else {
+            playSound(sounds.gameOver);
+        }
+
+        // Show confetti effect for win
+        if (reason === 'win') {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        // Display game end message
+        const timeSpent = 180 - timeLeft;
+        let message;
+        if (reason === 'win') {
+            message = `Bingo! You won in ${timeSpent} seconds with ${markedCount} marks!`;
+            showVictoryModal(message);
+        } else if (reason === 'timeUp') {
+            message = `Game Over! Time's up. You marked ${markedCount} numbers.`;
+            Telegram.WebApp.showAlert(message);
+        } else if (reason === 'maxMarks') {
+            message = `Game Over! You've used all ${maxMarked} marks without getting BINGO.`;
+            Telegram.WebApp.showAlert(message);
+        }
+    }
+
+    function showVictoryModal(message) {
+        victoryMessage.textContent = message;
+        victoryModal.style.display = "block";
+    }
+
+    function callNumber() {
+        if (isGameOver) return;
+        let newNumber;
+        do {
+            const letter = letters[Math.floor(Math.random() * 5)];
+            const number = Math.floor(Math.random() * 15) + 1 + (letters.indexOf(letter) * 15);
+            newNumber = { letter, number };
+        } while (calledNumbers.includes(newNumber.number));
+        
+        calledNumbers.push(newNumber.number);
+        ballLetter.textContent = newNumber.letter;
+        ballLetter.style.color = `var(--${newNumber.letter.toLowerCase()}-color)`;
+        ballNumber.textContent = newNumber.number;
+        highlightBoardNumber(newNumber.number);
+        playSound(sounds.ballCall);
+    }
+
+    function highlightBoardNumber(number) {
+        const cells = document.querySelectorAll('.bingo-cell');
+        cells.forEach(cell => {
+            if (parseInt(cell.textContent) === number) {
+                const originalColor = cell.style.backgroundColor;
+                cell.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color');
+                setTimeout(() => {
+                    cell.style.backgroundColor = originalColor;
+                }, 1000);
+            }
+        });
+    }
+
+    function startGame() {
+        isGameOver = false;
+        calledNumbers = [];
+        timeLeft = 180;
+        markedCount = 0;
+        updateMarkedCount();
+        updateTimeDisplay();
+
+        countdownInterval = setInterval(() => {
+            if (!isGameOver) {
+                timeLeft--;
+                updateTimeDisplay();
+                if (timeLeft <= 0) {
+                    endGame('timeUp');
+                }
+            }
+        }, 1000);
+
+        ballCallInterval = setInterval(() => {
+            if (!isGameOver) {
+                callNumber();
+            }
+        }, 3000);
+
+        startGameBtn.style.display = 'none';
+        newGameBtn.style.display = 'inline-block';
+    }
+
+    function stopGame() {
+        clearInterval(countdownInterval);
+        clearInterval(ballCallInterval);
+        startGameBtn.style.display = 'inline-block';
+        newGameBtn.style.display = 'none';
+    }
+
+    function updateTimeDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function playSound(sound) {
+        sound.currentTime = 0;
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
+
+    startGameBtn.addEventListener('click', startGame);
+    newGameBtn.addEventListener('click', () => {
+        stopGame();
+        createBingoBoard();
+        ballLetter.textContent = '';
+        ballNumber.textContent = '';
+        markedCount = 0;
+        updateMarkedCount();
+        timeLeft = 180;
+        updateTimeDisplay();
+        startGame();
+    });
+
+    closeModal.onclick = function() {
+        victoryModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == victoryModal) {
+            victoryModal.style.display = "none";
+        }
+    }
+
+    // Initialize the game
+    createBingoBoard();
+
+    // Set up Telegram Web App main button
+    Telegram.WebApp.MainButton.setText('Share Score');
+    Telegram.WebApp.MainButton.onClick(() => {
+        const timeSpent = 180 - timeLeft;
+        Telegram.WebApp.sendData(JSON.stringify({
+            action: 'share_score',
+            marks: markedCount,
+            time: timeSpent,
+            won: isGameOver && checkLines(document.querySelectorAll('.bingo-cell'))
+        }));
+    });
+    Telegram.WebApp.MainButton.show();
+
+    // Handle theme changes
+    Telegram.WebApp.onEvent('themeChanged', () => {
+        if (Telegram.WebApp.colorScheme === 'dark') {
+            document.documentElement.style.setProperty('--background-color', '#1E1E1E');
+            document.documentElement.style.setProperty('--text-color', '#FFFFFF');
+            document.documentElement.style.setProperty('--cell-bg-color', '#2C2C2C');
+            document.documentElement.style.setProperty('--cell-text-color', '#FFFFFF');
+        } else {
+            document.documentElement.style.setProperty('--background-color', '#F0F0F0');
+            document.documentElement.style.setProperty('--text-color', '#000000');
+            document.documentElement.style.setProperty('--cell-bg-color', '#FFFFFF');
+            document.documentElement.style.setProperty('--cell-text-color', '#000000');
+        }
+    });
+</script>
+</body>
+</html>
